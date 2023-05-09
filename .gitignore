@@ -2,3 +2,5 @@
 .history/
 test.py
 curses_builder/__pycache__/
+curses_builder.egg-info/
+build/
