@@ -153,7 +153,7 @@ class builder:
                                     if func == vstup:
                                         command = function[func][0]
                                         to_func = True
-                                elif func[0] == vstup[function[func][0]:function[func][1]]:
+                                elif func == vstup[function[func][0]:function[func][1]]:
                                     to_func = True
                                     command = function[func][2]
                             else:
@@ -174,6 +174,7 @@ class builder:
                         vstup = ''
                     if end:
                         break
+        return self
 
     def add(self, *args):
         for times, arg in enumerate(args):
