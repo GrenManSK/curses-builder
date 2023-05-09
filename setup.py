@@ -7,11 +7,7 @@ setup(
     version=VERSION,
     description='curses_builder',
     author=AUTHOR,
-    install_requires=[],
+    install_requires=['windows-curses'],
     packages=find_packages(exclude=('tests*', 'testing*')),
-    entry_points={
-        'console_scripts': [
-            'curses_builder = curses_builder.curses_builder:main',
-],
-}
+    entry_points={}
 )
