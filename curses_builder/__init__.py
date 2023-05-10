@@ -76,6 +76,7 @@ class builder:
                 y = None
                 border = None
                 function = None
+                width = None
                 for times, content in eval(f'self.{f}').items():
                     if times == 'type':
                         continue
@@ -96,6 +97,9 @@ class builder:
                         continue
                     elif times == 'function':
                         function = content
+                        continue
+                    elif times == 'width':
+                        width = content
                         continue
                     string(times, content[0], content[1])
                 if border:
@@ -245,18 +249,25 @@ class component(builder):
 
 class cinput(builder):
 
-    def __init__(self, y: int, x: int, key: str, function: dict, border: bool = False):
+    def __init__(self, y: int, x: int, key: str, function: dict, width=None, border: bool = False):
         self.y = y
         self.x = x
+        self.width = width
         self.border = border
         self.key = key
         self.function = function
 
     def __call__(self) -> dict:
         window = {'type': 'cinput', 'key': self.key, 'x': self.x +
-                  1 if self.border else self.x, 'y': self.y, 'border': self.border, 'function': self.function}
+                  1 if self.border else self.x, 'y': self.y, 'border': self.border, 'function': self.function, 'width': self.width}
+        width = self.width
         if self.border:
-            window[self.y] = [self.x, (COLS - self.x) * '_']
-            window[self.y + 1] = [self.x,
-                                  '|' + (COLS - 2  - self.x) * '_' + '|']
+            if width is None:
+                window[self.y] = [self.x, (COLS - self.x) * '_']
+                window[self.y + 1] = [self.x,
+                                      '|' + (COLS - 2 - self.x) * '_' + '|']
+            else:
+                window[self.y] = [self.x, (width + 2) * '_']
+                window[self.y + 1] = [self.x,
+                                      '|' + (width) * '_' + '|']
         return window
