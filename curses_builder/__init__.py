@@ -134,9 +134,9 @@ class builder:
                         stdscr.keypad(True)
                         curses.noecho()
                         if border:
-                            string(y + 1, x, int(COLS - 1)*'_')
+                            string(y + 1, x, int(COLS - 1 - x)*'_')
                         else:
-                            string(y + 1, x, int(COLS - 1)*' ')
+                            string(y + 1, x, int(COLS - 1 - x)*' ')
                     if konecna:
                         if not ikey == '':
                             vstup = vstup[1:-1]
@@ -150,12 +150,29 @@ class builder:
                                     func_args = function[func][1]
                                     if not isinstance(func_args, list):
                                         raise ValueError()
-                                    if func == vstup:
+                                    if func == vstup.split(' ')[0]:
+                                        if function[func][1][0] == 'args':
+                                            func_args = vstup[len(
+                                                func):].split(' ')
+                                            func_args = list(
+                                                filter(('').__ne__, func_args))
                                         command = function[func][0]
                                         to_func = True
                                 elif func == vstup[function[func][0]:function[func][1]]:
                                     to_func = True
-                                    command = function[func][2]
+                                    if len(function[func][2]) == 2:
+                                        if function[func][2][1][0] == 'args':
+                                            func_args = vstup.split(
+                                                ' ', 1)[1].split(' ')
+                                            func_args = list(
+                                                filter(('').__ne__, func_args))
+                                        else:
+                                            func_args = function[func][2][1]
+                                            if not isinstance(func_args, list):
+                                                raise ValueError()
+                                        command = function[func][2][0]
+                                    else:
+                                        command = function[func][2]
                             else:
                                 if func == vstup:
                                     to_func = True
@@ -207,7 +224,7 @@ class component(builder):
             for i in range(self.height - len(self.content) - 2):
                 self.content.append('')
 
-    def __call__(self, *args: any, **kwds: any) -> any:
+    def __call__(self) -> dict:
         window = {'type': 'component'}
         if self.border:
             window[self.y] = [self.x, (self.width + 2) * '_']
@@ -235,11 +252,11 @@ class cinput(builder):
         self.key = key
         self.function = function
 
-    def __call__(self, *args: any, **kwds: any) -> any:
+    def __call__(self) -> dict:
         window = {'type': 'cinput', 'key': self.key, 'x': self.x +
                   1 if self.border else self.x, 'y': self.y, 'border': self.border, 'function': self.function}
         if self.border:
-            window[self.y] = [self.x, (COLS) * '_']
+            window[self.y] = [self.x, (COLS - self.x) * '_']
             window[self.y + 1] = [self.x,
-                                  '|' + (COLS - 2) * '_' + '|']
+                                  '|' + (COLS - 2  - self.x) * '_' + '|']
         return window
