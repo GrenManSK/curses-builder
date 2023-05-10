@@ -1,7 +1,15 @@
 import curses
 import copy
+from random import randint
 VERSION = '1.0.0'
 AUTHOR = 'GrenManSK'
+
+
+def get_id(long: int = 10) -> int:
+    id = ''
+    for i in range(long):
+        id += str(randint(0, 9))
+    return id
 
 
 window = {}
@@ -13,6 +21,8 @@ history_number = 0
 in_func = False
 func_reset = False
 last_command_history = {}
+ids = {}
+current_id = None
 
 
 class OnlyOneCharKey(Exception):
@@ -66,7 +76,7 @@ class builder:
             if isinstance(arg, component):
                 setattr(self, f"component_{comp}", arg())
                 comp += 1
-                
+
     def add_history(self, window_temp):
         global history_number
         global func_reset
@@ -89,7 +99,7 @@ class builder:
         for times, content in window_temp.items():
             string(times, 0, content, register=False)
         self.add_history(window_temp)
-        
+
     def restore(self, command):
         for y in command:
             x = command[y][0]
@@ -100,14 +110,17 @@ class builder:
         global history_number
         global in_func
         global func_reset
+        global current_id
         for f in dir(self):
             if str(f).startswith('component_'):
                 for times, content in eval(f'self.{f}').items():
                     if times == 'type':
                         continue
-                    if in_func:
-                        last_command_history[times] = [content[0], content[1]]
                     string(times, content[0], content[1])
+                    if in_func:
+                        last_command_history[ids[current_id]] = {}
+                        last_command_history[ids[current_id]][times] = [
+                            content[0], content[1]]
                 self.add_history(window)
             elif str(f).startswith('zcinput_'):
                 ikey = None
@@ -205,6 +218,10 @@ class builder:
                                                 filter(('').__ne__, func_args))
                                         command = function[func][0]
                                         to_func = True
+                                        try:
+                                            ids[func]
+                                        except KeyError:
+                                            ids[func] = get_id()
                                 elif func == vstup[function[func][0]:function[func][1]]:
                                     to_func = True
                                     if len(function[func][2]) == 2:
@@ -220,26 +237,37 @@ class builder:
                                         command = function[func][2][0]
                                     else:
                                         command = function[func][2]
+                                    try:
+                                        ids[func]
+                                    except KeyError:
+                                        ids[func] = get_id()
                             else:
                                 if func == vstup:
+                                    try:
+                                        ids[func]
+                                    except KeyError:
+                                        ids[func] = get_id()
                                     to_func = True
                                     command = function[func]
+
                             if to_func:
                                 if command == 'break':
                                     end = True
                                     break
                                 if command == 'reset':
                                     try:
-                                        self.reset(history[history_number - 2 - history_in_row*2])
+                                        self.reset(
+                                            history[history_number - 2 - history_in_row*2])
                                         history_in_row += 1
                                         func_reset = True
                                     except KeyError:
                                         pass
                                 else:
                                     if last_command == command:
-                                        self.restore(last_command_history)
+                                        self.restore(last_command_history[ids[func]])
                                     history_in_row = 0
                                     in_func = True
+                                    current_id = func
                                     if func_args is not None:
                                         command(*func_args)
                                     else:
