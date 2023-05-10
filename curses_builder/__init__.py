@@ -7,12 +7,12 @@ AUTHOR = 'GrenManSK'
 window = {}
 current_row = 0
 
-global history_number
-global history
 global in_func
 history = {}
 history_number = 0
 in_func = False
+func_reset = False
+
 
 class OnlyOneCharKey(Exception):
     pass
@@ -65,25 +65,41 @@ class builder:
             if isinstance(arg, component):
                 setattr(self, f"component_{comp}", arg())
                 comp += 1
+                
+    def add_history(self, window_temp):
+        global history_number
+        global func_reset
+        try:
+            if history[history_number] == history[history_number - 1]:
+                return
+        except KeyError:
+            pass
+        if not in_func and not func_reset:
+            history[history_number] = copy.deepcopy(window_temp)
+            history_number += 1
+            window = copy.deepcopy(window_temp)
 
-    def reset(self, window):
+    def reset(self, window_temp):
+        global history_number
+        global window
+        global func_reset
         for i in range(LINES):
             string(i, 0, COLS*" ", register=False)
-        for times, content in window.items():
+        for times, content in window_temp.items():
             string(times, 0, content, register=False)
+        self.add_history(window_temp)
 
     def build(self):
         global history_number
         global in_func
+        global func_reset
         for f in dir(self):
             if str(f).startswith('component_'):
                 for times, content in eval(f'self.{f}').items():
                     if times == 'type':
                         continue
                     string(times, content[0], content[1])
-                if not in_func:
-                    history[history_number] = copy.deepcopy(window)
-                    history_number += 1
+                self.add_history(window)
             elif str(f).startswith('zcinput_'):
                 ikey = None
                 x = None
@@ -123,10 +139,10 @@ class builder:
                 inp = False
                 vstup = ''
                 end = False
-                if not in_func:
-                    history[history_number] = copy.deepcopy(window)
-                    history_number += 1
+                history_in_row = 0
+                self.add_history(window)
                 while True:
+                    func_reset = False
                     konecna = False
                     if ikey == '' and not inp:
                         inp = True
@@ -203,24 +219,26 @@ class builder:
                                     end = True
                                     break
                                 if command == 'reset':
-                                    self.reset(history[history_number - 2])
+                                    try:
+                                        self.reset(history[history_number - 2 - history_in_row*2])
+                                        history_in_row += 1
+                                        func_reset = True
+                                    except KeyError:
+                                        pass
                                 else:
+                                    history_in_row = 0
                                     in_func = True
                                     if func_args is not None:
                                         command(*func_args)
                                     else:
                                         command()
                                     in_func = False
-                                if not in_func:
-                                    history[history_number] = copy.deepcopy(window)
-                                    history_number += 1
+                                self.add_history(window)
                         func_args = None
                         vstup = ''
                     if end:
                         break
-                if not in_func:
-                    history[history_number] = copy.deepcopy(window)
-                    history_number += 1
+                self.add_history(window)
         return self
 
     def add(self, *args):
