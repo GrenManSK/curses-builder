@@ -1,4 +1,5 @@
 import curses
+import copy
 VERSION = '1.0.0'
 AUTHOR = 'GrenManSK'
 
@@ -6,6 +7,12 @@ AUTHOR = 'GrenManSK'
 window = {}
 current_row = 0
 
+global history_number
+global history
+global in_func
+history = {}
+history_number = 0
+in_func = False
 
 class OnlyOneCharKey(Exception):
     pass
@@ -60,16 +67,23 @@ class builder:
                 comp += 1
 
     def reset(self, window):
+        for i in range(LINES):
+            string(i, 0, COLS*" ", register=False)
         for times, content in window.items():
             string(times, 0, content, register=False)
 
     def build(self):
+        global history_number
+        global in_func
         for f in dir(self):
             if str(f).startswith('component_'):
                 for times, content in eval(f'self.{f}').items():
                     if times == 'type':
                         continue
                     string(times, content[0], content[1])
+                if not in_func:
+                    history[history_number] = copy.deepcopy(window)
+                    history_number += 1
             elif str(f).startswith('zcinput_'):
                 ikey = None
                 x = None
@@ -109,6 +123,9 @@ class builder:
                 inp = False
                 vstup = ''
                 end = False
+                if not in_func:
+                    history[history_number] = copy.deepcopy(window)
+                    history_number += 1
                 while True:
                     konecna = False
                     if ikey == '' and not inp:
@@ -185,16 +202,25 @@ class builder:
                                 if command == 'break':
                                     end = True
                                     break
+                                if command == 'reset':
+                                    self.reset(history[history_number - 2])
                                 else:
+                                    in_func = True
                                     if func_args is not None:
                                         command(*func_args)
                                     else:
                                         command()
-                                    break
+                                    in_func = False
+                                if not in_func:
+                                    history[history_number] = copy.deepcopy(window)
+                                    history_number += 1
                         func_args = None
                         vstup = ''
                     if end:
                         break
+                if not in_func:
+                    history[history_number] = copy.deepcopy(window)
+                    history_number += 1
         return self
 
     def add(self, *args):
