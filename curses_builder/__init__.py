@@ -12,6 +12,7 @@ history = {}
 history_number = 0
 in_func = False
 func_reset = False
+last_command_history = {}
 
 
 class OnlyOneCharKey(Exception):
@@ -88,6 +89,12 @@ class builder:
         for times, content in window_temp.items():
             string(times, 0, content, register=False)
         self.add_history(window_temp)
+        
+    def restore(self, command):
+        for y in command:
+            x = command[y][0]
+            content = len(command[y][1].strip()) * ' '
+            string(y, x, content, )
 
     def build(self):
         global history_number
@@ -98,6 +105,8 @@ class builder:
                 for times, content in eval(f'self.{f}').items():
                     if times == 'type':
                         continue
+                    if in_func:
+                        last_command_history[times] = [content[0], content[1]]
                     string(times, content[0], content[1])
                 self.add_history(window)
             elif str(f).startswith('zcinput_'):
@@ -140,6 +149,7 @@ class builder:
                 vstup = ''
                 end = False
                 history_in_row = 0
+                last_command = None
                 self.add_history(window)
                 while True:
                     func_reset = False
@@ -226,12 +236,15 @@ class builder:
                                     except KeyError:
                                         pass
                                 else:
+                                    if last_command == command:
+                                        self.restore(last_command_history)
                                     history_in_row = 0
                                     in_func = True
                                     if func_args is not None:
                                         command(*func_args)
                                     else:
                                         command()
+                                    last_command = command
                                     in_func = False
                                 self.add_history(window)
                         func_args = None
