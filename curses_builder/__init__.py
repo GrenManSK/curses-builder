@@ -1,12 +1,13 @@
 import curses
 import copy
 from random import randint
-VERSION = '1.0.0'
-AUTHOR = 'GrenManSK'
+
+VERSION = "1.0.0"
+AUTHOR = "GrenManSK"
 
 
 def get_id(long: int = 10) -> int:
-    id = ''
+    id = ""
     for i in range(long):
         id += str(randint(0, 9))
     return id
@@ -38,10 +39,17 @@ def init(stdscr_temp):
     LINES = curses.LINES
 
 
-def string(y: int, x: int, content: str, move: int = 0, refresh: bool = True, register: bool = True) -> None:
+def string(
+    y: int,
+    x: int,
+    content: str,
+    move: int = 0,
+    refresh: bool = True,
+    register: bool = True,
+) -> None:
     global window
     global current_row
-    if y == 'type':
+    if y == "type":
         return
     try:
         stdscr.addstr(y, x, content)
@@ -52,19 +60,18 @@ def string(y: int, x: int, content: str, move: int = 0, refresh: bool = True, re
             if window[y] is not None:
                 if len(window[y]) < x:
                     window[y] = window[y] + \
-                        (x-len(window[y]))*' ' + content
+                        (x - len(window[y])) * " " + content
                 else:
                     window[y] = window[y][0:x] + content + \
                         window[y][x + len(content):]
         except KeyError:
-            window[y] = ' '*x + content
+            window[y] = " " * x + content
     current_row += move
     if refresh:
         stdscr.refresh()
 
 
 class builder:
-
     def __init__(self, *args):
         self.lenght = len(args)
         cin = 0
@@ -95,7 +102,7 @@ class builder:
         global window
         global func_reset
         for i in range(LINES):
-            string(i, 0, COLS*" ", register=False)
+            string(i, 0, COLS * " ", register=False)
         for times, content in window_temp.items():
             string(times, 0, content, register=False)
         self.add_history(window_temp)
@@ -103,8 +110,12 @@ class builder:
     def restore(self, command):
         for y in command:
             x = command[y][0]
-            content = len(command[y][1].strip()) * ' '
-            string(y, x, content, )
+            content = len(command[y][1].strip()) * " "
+            string(
+                y,
+                x,
+                content,
+            )
 
     def build(self):
         global history_number
@@ -112,54 +123,57 @@ class builder:
         global func_reset
         global current_id
         for f in dir(self):
-            if str(f).startswith('component_'):
-                for times, content in eval(f'self.{f}').items():
-                    if times == 'type':
+            if str(f).startswith("component_"):
+                for times, content in eval(f"self.{f}").items():
+                    if times == "type":
                         continue
                     string(times, content[0], content[1])
                     if in_func:
                         last_command_history[ids[current_id]] = {}
                         last_command_history[ids[current_id]][times] = [
-                            content[0], content[1]]
+                            content[0],
+                            content[1],
+                        ]
                 self.add_history(window)
-            elif str(f).startswith('zcinput_'):
+            elif str(f).startswith("zcinput_"):
                 ikey = None
                 x = None
                 y = None
                 border = None
                 function = None
                 width = None
-                for times, content in eval(f'self.{f}').items():
-                    if times == 'type':
+                for times, content in eval(f"self.{f}").items():
+                    if times == "type":
                         continue
-                    elif times == 'key':
+                    elif times == "key":
                         if len(content) > 1:
                             raise OnlyOneCharKey(
-                                "You must provide a key, not combination")
+                                "You must provide a key, not combination"
+                            )
                         ikey = content
                         continue
-                    elif times == 'x':
+                    elif times == "x":
                         x = content
                         continue
-                    elif times == 'y':
+                    elif times == "y":
                         y = content
                         continue
-                    elif times == 'border':
+                    elif times == "border":
                         border = content
                         continue
-                    elif times == 'function':
+                    elif times == "function":
                         function = content
                         continue
-                    elif times == 'width':
+                    elif times == "width":
                         width = content
                         continue
                     string(times, content[0], content[1])
                 if border:
-                    string(y, x + 1, '_')
+                    string(y, x + 1, "_")
                 else:
-                    string(y, x, ' ')
+                    string(y, x, " ")
                 inp = False
-                vstup = ''
+                vstup = ""
                 end = False
                 history_in_row = 0
                 last_command = None
@@ -167,7 +181,7 @@ class builder:
                 while True:
                     func_reset = False
                     konecna = False
-                    if ikey == '' and not inp:
+                    if ikey == "" and not inp:
                         inp = True
                         vstup += ikey
                         curses.nocbreak()
@@ -176,29 +190,32 @@ class builder:
                         string(y + 1, x, ikey)
                     key = stdscr.getkey()
                     if inp:
-                        if not key == '\n':
+                        if not key == "\n":
                             vstup += key
                         else:
-                            vstup = vstup.strip() + ' '
+                            vstup = vstup.strip() + " "
                     if key == ikey:
                         inp = True
                         vstup += ikey
                         curses.nocbreak()
                         stdscr.keypad(False)
                         curses.echo()
-                        string(y + 1, x, ikey)
-                    if key == '\n':
+                        if border:
+                            string(y + 1, x, ikey)
+                        else:
+                            string(y, x, ikey)
+                    if key == "\n":
                         konecna = True
                         inp = False
                         curses.cbreak()
                         stdscr.keypad(True)
                         curses.noecho()
                         if border:
-                            string(y + 1, x, int(COLS - 1 - x)*'_')
+                            string(y + 1, x, int(COLS - 1 - x) * "_")
                         else:
-                            string(y + 1, x, int(COLS - 1 - x)*' ')
+                            string(y, x, int(COLS - 1 - x) * " ")
                     if konecna:
-                        if not ikey == '':
+                        if not ikey == "":
                             vstup = vstup[1:-1]
                         else:
                             vstup = vstup[:-1]
@@ -210,26 +227,34 @@ class builder:
                                     func_args = function[func][1]
                                     if not isinstance(func_args, list):
                                         raise ValueError()
-                                    if func == vstup.split(' ')[0]:
-                                        if function[func][1][0] == 'args':
+                                    if func == vstup.split(" ")[0]:
+                                        if function[func][1][0] == "args":
                                             func_args = vstup[len(
-                                                func):].split(' ')
+                                                func):].split(" ")
                                             func_args = list(
-                                                filter(('').__ne__, func_args))
+                                                filter(("").__ne__, func_args)
+                                            )
                                         command = function[func][0]
                                         to_func = True
                                         try:
                                             ids[func]
                                         except KeyError:
                                             ids[func] = get_id()
-                                elif func == vstup[function[func][0]:function[func][1]]:
+                                elif (
+                                    func == vstup[function[func]
+                                                  [0]: function[func][1]]
+                                ):
                                     to_func = True
-                                    if len(function[func][2]) == 2:
-                                        if function[func][2][1][0] == 'args':
-                                            func_args = vstup.split(
-                                                ' ', 1)[1].split(' ')
+                                    if callable(function[func][2]):
+                                        command = function[func][2]
+                                    elif len(function[func][2]) == 2:
+                                        if function[func][2][1][0] == "args":
+                                            func_args = vstup.split(" ", 1)[1].split(
+                                                " "
+                                            )
                                             func_args = list(
-                                                filter(('').__ne__, func_args))
+                                                filter(("").__ne__, func_args)
+                                            )
                                         else:
                                             func_args = function[func][2][1]
                                             if not isinstance(func_args, list):
@@ -251,20 +276,24 @@ class builder:
                                     command = function[func]
 
                             if to_func:
-                                if command == 'break':
+                                if command == "break":
                                     end = True
                                     break
-                                if command == 'reset':
+                                if command == "reset":
                                     try:
                                         self.reset(
-                                            history[history_number - 2 - history_in_row*2])
+                                            history[
+                                                history_number - 2 - history_in_row * 2
+                                            ]
+                                        )
                                         history_in_row += 1
                                         func_reset = True
                                     except KeyError:
                                         pass
                                 else:
                                     if last_command == command:
-                                        self.restore(last_command_history[ids[func]])
+                                        self.restore(
+                                            last_command_history[ids[func]])
                                     history_in_row = 0
                                     in_func = True
                                     current_id = func
@@ -276,7 +305,7 @@ class builder:
                                     in_func = False
                                 self.add_history(window)
                         func_args = None
-                        vstup = ''
+                        vstup = ""
                     if end:
                         break
                 self.add_history(window)
@@ -289,7 +318,15 @@ class builder:
 
 
 class component(builder):
-    def __init__(self, content: list[str], y: int, x: int, height: int | None = None, width: int | None = None, border: bool = False):
+    def __init__(
+        self,
+        content: list[str],
+        y: int,
+        x: int,
+        height: int | None = None,
+        width: int | None = None,
+        border: bool = False,
+    ):
         self.content = content
         self.y = y
         self.x = x
@@ -308,33 +345,42 @@ class component(builder):
         self.border = border
         if len(self.content) < self.height and not self.border:
             for i in range(self.height - len(self.content)):
-                self.content.append('')
+                self.content.append("")
         elif len(self.content) < self.height - 2 and self.border:
             for i in range(self.height - len(self.content) - 2):
-                self.content.append('')
+                self.content.append("")
 
     def __call__(self) -> dict:
-        window = {'type': 'component'}
+        window = {"type": "component"}
         if self.border:
-            window[self.y] = [self.x, (self.width + 2) * '_']
+            window[self.y] = [self.x, (self.width + 2) * "_"]
             window[self.y + self.height + 1] = [self.x,
-                                                '|' + (self.width) * '_' + '|']
+                                                "|" + (self.width) * "_" + "|"]
         number = 0
         times = 0 if not self.border else 1
         for times in range(self.y + times, self.height + self.y + times):
             if not self.border:
-                window[self.y + number] = [self.x, self.content[number] +
-                                           (self.width - len(self.content[number]))*' ']
+                window[self.y + number] = [
+                    self.x,
+                    self.content[number]
+                    + (self.width - len(self.content[number])) * " ",
+                ]
             if self.border:
-                window[self.y + number + 1] = [self.x, '|' + self.content[number] +
-                                               (self.width - len(self.content[number]))*' ' + '|']
+                window[self.y + number + 1] = [
+                    self.x,
+                    "|"
+                    + self.content[number]
+                    + (self.width - len(self.content[number])) * " "
+                    + "|",
+                ]
             number += 1
         return window
 
 
 class cinput(builder):
-
-    def __init__(self, y: int, x: int, key: str, function: dict, width=None, border: bool = False):
+    def __init__(
+        self, y: int, x: int, key: str, function: dict, width=None, border: bool = False
+    ):
         self.y = y
         self.x = x
         self.width = width
@@ -343,16 +389,22 @@ class cinput(builder):
         self.function = function
 
     def __call__(self) -> dict:
-        window = {'type': 'cinput', 'key': self.key, 'x': self.x +
-                  1 if self.border else self.x, 'y': self.y, 'border': self.border, 'function': self.function, 'width': self.width}
+        window = {
+            "type": "cinput",
+            "key": self.key,
+            "x": self.x + 1 if self.border else self.x,
+            "y": self.y,
+            "border": self.border,
+            "function": self.function,
+            "width": self.width,
+        }
         width = self.width
         if self.border:
             if width is None:
-                window[self.y] = [self.x, (COLS - self.x) * '_']
-                window[self.y + 1] = [self.x,
-                                      '|' + (COLS - 2 - self.x) * '_' + '|']
+                window[self.y] = [self.x, (COLS - self.x) * "_"]
+                window[self.y + 1] = [self.x, "|" +
+                                      (COLS - 2 - self.x) * "_" + "|"]
             else:
-                window[self.y] = [self.x, (width + 2) * '_']
-                window[self.y + 1] = [self.x,
-                                      '|' + (width) * '_' + '|']
+                window[self.y] = [self.x, (width + 2) * "_"]
+                window[self.y + 1] = [self.x, "|" + (width) * "_" + "|"]
         return window
