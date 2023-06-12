@@ -2,7 +2,7 @@ import curses
 import copy
 from random import randint
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 AUTHOR = "GrenManSK"
 
 
@@ -59,11 +59,9 @@ def string(
         try:
             if window[y] is not None:
                 if len(window[y]) < x:
-                    window[y] = window[y] + \
-                        (x - len(window[y])) * " " + content
+                    window[y] = window[y] + (x - len(window[y])) * " " + content
                 else:
-                    window[y] = window[y][0:x] + content + \
-                        window[y][x + len(content):]
+                    window[y] = window[y][0:x] + content + window[y][x + len(content) :]
         except KeyError:
             window[y] = " " * x + content
     current_row += move
@@ -164,6 +162,9 @@ class builder:
                     elif times == "function":
                         function = content
                         continue
+                    elif times == "limit":
+                        limit = content
+                        continue
                     elif times == "width":
                         width = content
                         continue
@@ -215,6 +216,7 @@ class builder:
                         else:
                             string(y, x, int(COLS - 1 - x) * " ")
                     if konecna:
+                        limit -= 1
                         if not ikey == "":
                             vstup = vstup[1:-1]
                         else:
@@ -229,8 +231,7 @@ class builder:
                                         raise ValueError()
                                     if func == vstup.split(" ")[0]:
                                         if function[func][1][0] == "args":
-                                            func_args = vstup[len(
-                                                func):].split(" ")
+                                            func_args = vstup[len(func) :].split(" ")
                                             func_args = list(
                                                 filter(("").__ne__, func_args)
                                             )
@@ -241,8 +242,7 @@ class builder:
                                         except KeyError:
                                             ids[func] = get_id()
                                 elif (
-                                    func == vstup[function[func]
-                                                  [0]: function[func][1]]
+                                    func == vstup[function[func][0] : function[func][1]]
                                 ):
                                     to_func = True
                                     if callable(function[func][2]):
@@ -292,8 +292,7 @@ class builder:
                                         pass
                                 else:
                                     if last_command == command:
-                                        self.restore(
-                                            last_command_history[ids[func]])
+                                        self.restore(last_command_history[ids[func]])
                                     history_in_row = 0
                                     in_func = True
                                     current_id = func
@@ -306,6 +305,8 @@ class builder:
                                 self.add_history(window)
                         func_args = None
                         vstup = ""
+                    if limit == 0:
+                        break
                     if end:
                         break
                 self.add_history(window)
@@ -354,8 +355,7 @@ class component(builder):
         window = {"type": "component"}
         if self.border:
             window[self.y] = [self.x, (self.width + 2) * "_"]
-            window[self.y + self.height + 1] = [self.x,
-                                                "|" + (self.width) * "_" + "|"]
+            window[self.y + self.height + 1] = [self.x, "|" + (self.width) * "_" + "|"]
         number = 0
         times = 0 if not self.border else 1
         for times in range(self.y + times, self.height + self.y + times):
@@ -379,7 +379,14 @@ class component(builder):
 
 class cinput(builder):
     def __init__(
-        self, y: int, x: int, key: str, function: dict, width=None, border: bool = False
+        self,
+        y: int,
+        x: int,
+        key: str,
+        function: dict,
+        width=None,
+        border: bool = False,
+        limit=-1,
     ):
         self.y = y
         self.x = x
@@ -387,6 +394,7 @@ class cinput(builder):
         self.border = border
         self.key = key
         self.function = function
+        self.limit = limit
 
     def __call__(self) -> dict:
         window = {
@@ -397,13 +405,13 @@ class cinput(builder):
             "border": self.border,
             "function": self.function,
             "width": self.width,
+            "limit": self.limit,
         }
         width = self.width
         if self.border:
             if width is None:
                 window[self.y] = [self.x, (COLS - self.x) * "_"]
-                window[self.y + 1] = [self.x, "|" +
-                                      (COLS - 2 - self.x) * "_" + "|"]
+                window[self.y + 1] = [self.x, "|" + (COLS - 2 - self.x) * "_" + "|"]
             else:
                 window[self.y] = [self.x, (width + 2) * "_"]
                 window[self.y + 1] = [self.x, "|" + (width) * "_" + "|"]
