@@ -165,6 +165,9 @@ class builder:
                     elif times == "limit":
                         limit = content
                         continue
+                    elif times == "nof":
+                        nof = content
+                        continue
                     elif times == "width":
                         width = content
                         continue
@@ -249,9 +252,15 @@ class builder:
                                         command = function[func][2]
                                     elif len(function[func][2]) == 2:
                                         if function[func][2][1][0] == "args":
-                                            func_args = vstup.split(" ", 1)[1].split(
-                                                " "
-                                            )
+                                            try:
+                                                func_args = vstup.split(" ", 1)[1].split(
+                                                    " "
+                                                )
+                                            except IndexError:
+                                                if nof:
+                                                    func_args = vstup
+                                                else:
+                                                    raise ValueError
                                             func_args = list(
                                                 filter(("").__ne__, func_args)
                                             )
@@ -387,6 +396,7 @@ class cinput(builder):
         width=None,
         border: bool = False,
         limit=-1,
+        nof = False
     ):
         self.y = y
         self.x = x
@@ -395,6 +405,7 @@ class cinput(builder):
         self.key = key
         self.function = function
         self.limit = limit
+        self.nof = nof
 
     def __call__(self) -> dict:
         window = {
@@ -406,6 +417,7 @@ class cinput(builder):
             "function": self.function,
             "width": self.width,
             "limit": self.limit,
+            "nof": self.nof
         }
         width = self.width
         if self.border:
