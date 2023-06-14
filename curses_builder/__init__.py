@@ -191,6 +191,7 @@ class builder:
                 arg_num = 0
                 arg_num_hist = -1
                 arg_hist = {}
+                __func_to_use = ""
                 while True:
                     string(y, x, (COLS - x) * " ")
                     string(y - 1, x, (COLS - x) * " ")
@@ -207,15 +208,38 @@ class builder:
                         arg_num = 0
                         arg_num_hist = -1
                         arg_hist = {}
-                    if vstup[1:] in function.keys():
-                        _func = vstup[1:]
-                        if function[_func] == 'help':
+                    if vstup[1:].split("\t")[0] in function.keys():
+                        _func = vstup[1:].split(" ")[0].split("\t")[0]
+                        number_of_tabs = vstup.count("\t")
+                        while number_of_tabs > len(function.keys()) - 1:
+                            number_of_tabs -= 1
+                            vstup = vstup[:-1]
+                        indent = 4
+                        if function[_func] == "help":
                             _help = ""
-                            for i in function.keys():
+                            for times, i in enumerate(function.keys()):
                                 _help += f" {i} |"
+                                if times < number_of_tabs:
+                                    indent += len(i) + 3
+                                elif times == number_of_tabs:
+                                    indent += int(len(i) / 2)
+                                    __func_to_use = i
                             _help = _help[:-1]
-                            string(y - 1, x + 2, _help)
-                            string(y, x, vstup)
+                            indent -= 1
+                            string(
+                                y - 1,
+                                x + len(vstup.split(" ")[0].split("\t")[0]),
+                                _help,
+                            )
+                            string(
+                                y,
+                                x
+                                + indent
+                                + len(vstup.split(" ")[0].split("\t")[0])
+                                - 2,
+                                "^",
+                            )
+                            string(y, x, vstup.split("\t")[0])
                         elif not _func in ["q", "r"]:
                             is_func = True
                             pocet = len(_func) + 1
@@ -297,6 +321,12 @@ class builder:
                                 if vstup == "":
                                     vstup = ":"
                                 string(y, x + len(vstup), "")
+                            elif key == "KEY_BTAB":
+                                if _func == "help":
+                                    if vstup[-1] in ["\t", " "]:
+                                        vstup = vstup[:-1]
+                                        while vstup[-1] == " ":
+                                            vstup = vstup[:-1]
                             else:
                                 vstup += key
                         else:
@@ -305,7 +335,6 @@ class builder:
                         if vstup == ikey * 2:
                             inp = False
                             konecna = True
-                            key = "\n"
                         else:
                             inp = True
                             vstup += ikey
@@ -317,17 +346,21 @@ class builder:
                             else:
                                 string(y, x, ikey)
                     if key == "\n":
-                        konecna = True
-                        inp = False
-                        curses.cbreak()
-                        stdscr.keypad(True)
-                        curses.noecho()
-                        if border:
-                            string(y + 1, x, int(COLS - 1 - x) * "_")
-                            string(y - 1, x, COLS * "_")
-                        else:
-                            string(y, x, int(COLS - 1 - x) * " ")
-                            string(y - 1, x, COLS * " ")
+                        if _func is not None:
+                            if function[_func] == "help":
+                                vstup = ":" + __func_to_use
+                            else:
+                                konecna = True
+                                inp = False
+                                curses.cbreak()
+                                stdscr.keypad(True)
+                                curses.noecho()
+                            if border:
+                                string(y + 1, x, int(COLS - 1 - x) * "_")
+                                string(y - 1, x, COLS * "_")
+                            else:
+                                string(y, x, int(COLS - 1 - x) * " ")
+                                string(y - 1, x, COLS * " ")
                     if konecna:
                         limit -= 1
                         if not ikey == "":
