@@ -398,6 +398,8 @@ class builder:
                                 if command == "break":
                                     end = True
                                     break
+                                if command == "help":
+                                    continue
                                 if command == "reset":
                                     try:
                                         self.reset(
