@@ -165,6 +165,9 @@ class builder:
                     elif times == "limit":
                         limit = content
                         continue
+                    elif times == "help":
+                        help = content
+                        continue
                     elif times == "nof":
                         nof = content
                         continue
@@ -187,16 +190,23 @@ class builder:
                 is_func = False
                 arg_num = 0
                 arg_num_hist = -1
+                arg_hist = {}
                 while True:
                     string(y, x, (COLS - x) * " ")
                     string(y - 1, x, (COLS - x) * " ")
                     string(y, x, vstup)
                     func_reset = False
                     konecna = False
+                    if help and len(vstup) == 1:
+                        string(y - 1, x + 2, help)
+                        string(y, x, vstup)
                     if not vstup[1:pocet] in function.keys() and is_func:
                         string(y - 1, x, (COLS - x) * " ")
                         string(y, x + len(_func), "")
                         is_func = False
+                        arg_num = 0
+                        arg_num_hist = -1
+                        arg_hist = {}
                     if vstup[1:] in function.keys():
                         _func = vstup[1:]
                         if not _func in ["q", "r"]:
@@ -234,8 +244,16 @@ class builder:
                                 string(y - 1, x, (COLS - x) * "_")
                             else:
                                 string(y - 1, x, (COLS - x) * " ")
+                            if arg_num < arg_num_hist:
+                                try:
+                                    arg_hist.pop(function[_func][3][arg_num_hist])
+                                except IndexError:
+                                    pass
                             arg_num_hist = arg_num
                         try:
+                            arg_hist[function[_func][3][arg_num]] = x + posun
+                            for times, i in arg_hist.items():
+                                string(y - 1, x + i, times)
                             string(y - 1, x + posun, function[_func][3][arg_num])
                             more_arg = ""
                             for i in range(arg_num + 1, len(function[_func][3])):
@@ -277,15 +295,20 @@ class builder:
                         else:
                             vstup = vstup.strip() + " "
                     if key == ikey:
-                        inp = True
-                        vstup += ikey
-                        # curses.nocbreak()
-                        # stdscr.keypad(False)
-                        curses.echo()
-                        if border:
-                            string(y + 1, x, ikey)
+                        if vstup == ikey * 2:
+                            inp = False
+                            konecna = True
+                            key = "\n"
                         else:
-                            string(y, x, ikey)
+                            inp = True
+                            vstup += ikey
+                            # curses.nocbreak()
+                            # stdscr.keypad(False)
+                            curses.echo()
+                            if border:
+                                string(y + 1, x, ikey)
+                            else:
+                                string(y, x, ikey)
                     if key == "\n":
                         konecna = True
                         inp = False
@@ -472,11 +495,15 @@ class cinput(builder):
         y: int,
         x: int,
         key: str,
-        function: dict,
-        width=None,
+        function: dict[
+            str,
+            str | list[int, int, list[callable, list[any]], list[str]],
+        ],
+        width: None | int = None,
         border: bool = False,
-        limit=-1,
-        nof=False,
+        limit: int = -1,
+        nof: bool = False,
+        help: None | str = "",
     ):
         self.y = y
         self.x = x
@@ -486,6 +513,7 @@ class cinput(builder):
         self.function = function
         self.limit = limit
         self.nof = nof
+        self.help = help
 
     def __call__(self) -> dict:
         window = {
@@ -498,6 +526,7 @@ class cinput(builder):
             "width": self.width,
             "limit": self.limit,
             "nof": self.nof,
+            "help": self.help,
         }
         width = self.width
         if self.border:
