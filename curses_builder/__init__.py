@@ -209,7 +209,14 @@ class builder:
                         arg_hist = {}
                     if vstup[1:] in function.keys():
                         _func = vstup[1:]
-                        if not _func in ["q", "r"]:
+                        if function[_func] == 'help':
+                            _help = ""
+                            for i in function.keys():
+                                _help += f" {i} |"
+                            _help = _help[:-1]
+                            string(y - 1, x + 2, _help)
+                            string(y, x, vstup)
+                        elif not _func in ["q", "r"]:
                             is_func = True
                             pocet = len(_func) + 1
                     if is_func:
