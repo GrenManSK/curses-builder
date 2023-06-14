@@ -2,7 +2,7 @@ import curses
 import copy
 from random import randint
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 AUTHOR = "GrenManSK"
 
 
@@ -182,27 +182,105 @@ class builder:
                 history_in_row = 0
                 last_command = None
                 self.add_history(window)
+                pocet = 0
+                _func = None
+                is_func = False
+                arg_num = 0
+                arg_num_hist = -1
                 while True:
+                    string(y, x, (COLS - x) * " ")
+                    string(y - 1, x, (COLS - x) * " ")
+                    string(y, x, vstup)
                     func_reset = False
                     konecna = False
+                    if not vstup[1:pocet] in function.keys() and is_func:
+                        string(y - 1, x, (COLS - x) * " ")
+                        string(y, x + len(_func), "")
+                        is_func = False
+                    if vstup[1:] in function.keys():
+                        _func = vstup[1:]
+                        if not _func in ["q", "r"]:
+                            is_func = True
+                            pocet = len(_func) + 1
+                    if is_func:
+                        _vstup = list(filter(("").__ne__, vstup.split(" ")))
+                        increment = 1 if vstup.split(" ")[-1] == "" else 0
+                        count = 0
+                        _increment = 0
+                        for times, i in enumerate(vstup.split(" ")):
+                            if i == "":
+                                if times == 0 or times == len(vstup) - 1:
+                                    continue
+                                count += 1
+                            if i != "":
+                                _increment += count
+                                count = 0
+                        if increment == 1:
+                            _vstup.append("")
+                        arg_num = len(_vstup) - 2
+                        if arg_num == -1:
+                            arg_num = 0
+                        nam = vstup.split(" ")
+                        if len(nam) == 1:
+                            posun = len(_func) + 2 + _increment
+                        else:
+                            posun = (
+                                sum([len(i) for i in vstup.split(" ")[:-1]])
+                                + 2
+                                + _increment
+                            )
+                        if arg_num != arg_num_hist:
+                            if border:
+                                string(y - 1, x, (COLS - x) * "_")
+                            else:
+                                string(y - 1, x, (COLS - x) * " ")
+                            arg_num_hist = arg_num
+                        try:
+                            string(y - 1, x + posun, function[_func][3][arg_num])
+                            more_arg = ""
+                            for i in range(arg_num + 1, len(function[_func][3])):
+                                more_arg += " " + function[_func][3][i] + " |"
+                            more_arg = more_arg[:-1]
+                            more_posun = (
+                                len(vstup) - posun - len(function[_func][3][arg_num])
+                            )
+                            if more_posun < 0:
+                                more_posun = 0
+                            string(
+                                y - 1,
+                                x
+                                + posun
+                                + len(function[_func][3][arg_num])
+                                + more_posun,
+                                more_arg,
+                            )
+                            string(y, x + len(vstup), "")
+                        except IndexError:
+                            pass
                     if ikey == "" and not inp:
                         inp = True
                         vstup += ikey
-                        curses.nocbreak()
-                        stdscr.keypad(False)
+                        # curses.nocbreak()
+                        # stdscr.keypad(False)
                         curses.echo()
                         string(y + 1, x, ikey)
                     key = stdscr.getkey()
                     if inp:
                         if not key == "\n":
-                            vstup += key
+                            if key == "\x08":
+                                vstup = vstup[0:-1]
+                                if vstup == "":
+                                    vstup = ":"
+                                string(y, x + len(vstup), "")
+                            else:
+                                vstup += key
                         else:
                             vstup = vstup.strip() + " "
                     if key == ikey:
                         inp = True
                         vstup += ikey
-                        curses.nocbreak()
-                        stdscr.keypad(False)
+                        # curses.nocbreak()
+                        # stdscr.keypad(False)
                         curses.echo()
                         if border:
                             string(y + 1, x, ikey)
@@ -216,8 +294,10 @@ class builder:
                         curses.noecho()
                         if border:
                             string(y + 1, x, int(COLS - 1 - x) * "_")
+                            string(y - 1, x, COLS * "_")
                         else:
                             string(y, x, int(COLS - 1 - x) * " ")
+                            string(y - 1, x, COLS * " ")
                     if konecna:
                         limit -= 1
                         if not ikey == "":
@@ -253,9 +333,9 @@ class builder:
                                     elif len(function[func][2]) == 2:
                                         if function[func][2][1][0] == "args":
                                             try:
-                                                func_args = vstup.split(" ", 1)[1].split(
-                                                    " "
-                                                )
+                                                func_args = vstup.split(" ", 1)[
+                                                    1
+                                                ].split(" ")
                                             except IndexError:
                                                 if nof:
                                                     func_args = vstup
@@ -396,7 +476,7 @@ class cinput(builder):
         width=None,
         border: bool = False,
         limit=-1,
-        nof = False
+        nof=False,
     ):
         self.y = y
         self.x = x
@@ -417,7 +497,7 @@ class cinput(builder):
             "function": self.function,
             "width": self.width,
             "limit": self.limit,
-            "nof": self.nof
+            "nof": self.nof,
         }
         width = self.width
         if self.border:
