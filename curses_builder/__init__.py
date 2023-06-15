@@ -1,8 +1,9 @@
 import curses
 import copy
 from random import randint
+import Levenshtein
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 AUTHOR = "GrenManSK"
 
 
@@ -193,6 +194,8 @@ class builder:
                 arg_hist = {}
                 __func_to_use = ""
                 number_of_tabs_hist = 0
+                _in_tab = False
+                _in_tab_num = 0
                 while True:
                     string(y, x, (COLS - x) * " ")
                     string(y - 1, x, (COLS - x) * " ")
@@ -209,17 +212,18 @@ class builder:
                         arg_num = 0
                         arg_num_hist = -1
                         arg_hist = {}
-                    if vstup[1:].split("\t")[0] in function.keys():
+                    if vstup[1:].split(" ")[0].split("\t")[0] in function.keys():
                         _func = vstup[1:].split(" ")[0].split("\t")[0]
-                        number_of_tabs = vstup.count("\t")
-                        if number_of_tabs_hist == 0 and key == "KEY_BTAB":
-                            number_of_tabs = len(function.keys()) - 1
-                            vstup += number_of_tabs * "\t"
-                        while number_of_tabs > len(function.keys()) - 1:
-                            number_of_tabs = 0
-                            vstup = vstup.split("\t")[0]
-                        indent = 4
                         if function[_func] == "help":
+                            number_of_tabs = vstup.count("\t")
+                            if number_of_tabs_hist == 0 and key == "KEY_BTAB":
+                                number_of_tabs = len(function.keys()) - 1
+                                vstup += number_of_tabs * "\t"
+                            while number_of_tabs > len(function.keys()) - 1:
+                                number_of_tabs = 0
+                                vstup = vstup.split(" ")[0].split("\t")[0]
+                            indent = 4
+                            vstup = vstup.split(" ")[0]
                             _help = ""
                             for times, i in enumerate(function.keys()):
                                 _help += f" {i} |"
@@ -275,6 +279,37 @@ class builder:
                                 + 2
                                 + _increment
                             )
+                        try:
+                            if key == "\t":
+                                _help = function[_func][4][arg_num]
+                                string(y - 1, COLS - 14, "Running Engine")
+                                if isinstance(_help[0], list) and not _in_tab:
+                                    _return = search_engine_double(
+                                        _vstup[arg_num + 1], _help
+                                    )
+                                if isinstance(_help[0], str) and not _in_tab:
+                                    _return = search_engine(_vstup[arg_num + 1], _help)
+                                string(y - 1, COLS - 14, "              ")
+                                if _return is not None:
+                                    if _in_tab_num > len(_return):
+                                        _in_tab_num = 0
+                                    vstup = (
+                                        vstup.rsplit(" ", 1)[0]
+                                        + " "
+                                        + _return[_in_tab_num].replace(" ", "_")
+                                    )
+                                    string(y, x, (COLS - x) * " ")
+                                    string(y, x, vstup)
+                                    _in_tab = True
+                                    _in_tab_num += 1
+                            else:
+                                _in_tab = False
+                                _in_tab_num = 0
+                        except IndexError:
+                            _in_tab = False
+                            _in_tab_num = 0
+                        if _in_tab and key == "\t":
+                            vstup = vstup.replace("\t", " ")
                         if arg_num != arg_num_hist:
                             if border:
                                 string(y - 1, x, (COLS - x) * "_")
@@ -357,7 +392,7 @@ class builder:
                     if key == "\n":
                         if _func is not None:
                             if function[_func] == "help":
-                                vstup = ":" + __func_to_use
+                                vstup = ":" + __func_to_use + " "
                             else:
                                 konecna = True
                                 inp = False
@@ -548,7 +583,10 @@ class cinput(builder):
         key: str,
         function: dict[
             str,
-            str | list[int, int, list[callable, list[any]], list[str]],
+            str
+            | list[
+                int, int, list[callable, list[any]], list[str], list[str | list[str]]
+            ],
         ],
         width: None | int = None,
         border: bool = False,
@@ -588,3 +626,69 @@ class cinput(builder):
                 window[self.y] = [self.x, (width + 2) * "_"]
                 window[self.y + 1] = [self.x, "|" + (width) * "_" + "|"]
         return window
+
+
+def search_engine(query, data) -> None | list[str]:
+    if query in ["", "\t"]:
+        return data
+
+    query_words = query.lower().split()
+
+    results = []
+    for item in data:
+        words = item.lower().replace('"', "").replace("'", "").split()
+        match = True
+        for query_word in query_words:
+            word_matched = False
+            for word in words:
+                distance = Levenshtein.distance(query_word, word)
+                if distance <= 1:
+                    word_matched = True
+                    break
+            if not word_matched:
+                match = False
+                break
+        if match:
+            results.append(item)
+            break
+
+    if results:
+        return results
+    else:
+        return None
+
+
+def search_engine_double(query, data) -> None | list[str]:
+    if query in ["", "\t"]:
+        _data = []
+        for i in data:
+            for times, j in enumerate(i):
+                if times == 0:
+                    _data.append(j)
+        return _data
+
+    query_words = query.lower().split()
+
+    results = []
+    for item in data:
+        for text in item:
+            words = text.lower().replace('"', "").replace("'", "").split()
+            match = True
+            for query_word in query_words:
+                word_matched = False
+                for word in words:
+                    distance = Levenshtein.distance(query_word, word)
+                    if distance <= 1:
+                        word_matched = True
+                        break
+                if not word_matched:
+                    match = False
+                    break
+            if match:
+                results.append(text)
+                break
+
+    if results:
+        return results
+    else:
+        return None
