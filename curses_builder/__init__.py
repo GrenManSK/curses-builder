@@ -199,7 +199,10 @@ class builder:
                 _in_tab_num = 0
                 while True:
                     string(y, x, (COLS - x) * " ")
-                    string(y - 1, x, (COLS - x) * " ")
+                    if border:
+                        string(y - 1, x, (COLS - x) * "_")
+                    else:
+                        string(y - 1, x, (COLS - x) * " ")
                     string(y, x, vstup)
                     func_reset = False
                     konecna = False
