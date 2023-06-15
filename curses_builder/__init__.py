@@ -192,6 +192,7 @@ class builder:
                 arg_num_hist = -1
                 arg_hist = {}
                 __func_to_use = ""
+                number_of_tabs_hist = 0
                 while True:
                     string(y, x, (COLS - x) * " ")
                     string(y - 1, x, (COLS - x) * " ")
@@ -211,6 +212,9 @@ class builder:
                     if vstup[1:].split("\t")[0] in function.keys():
                         _func = vstup[1:].split(" ")[0].split("\t")[0]
                         number_of_tabs = vstup.count("\t")
+                        if number_of_tabs_hist == 0 and key == "KEY_BTAB":
+                            number_of_tabs = len(function.keys()) - 1
+                            vstup += number_of_tabs * "\t"
                         while number_of_tabs > len(function.keys()) - 1:
                             number_of_tabs = 0
                             vstup = vstup.split("\t")[0]
@@ -240,6 +244,7 @@ class builder:
                                 "^",
                             )
                             string(y, x, vstup.split("\t")[0])
+                            number_of_tabs_hist = number_of_tabs
                         elif not _func in ["q", "r"]:
                             is_func = True
                             pocet = len(_func) + 1
@@ -317,7 +322,11 @@ class builder:
                     if inp:
                         if not key == "\n":
                             if key == "\x08":
-                                vstup = vstup[0:-1]
+                                if _func is not None and function[_func] == "help":
+                                    vstup = ikey + _func[:-1]
+                                    _func = None
+                                else:
+                                    vstup = vstup[0:-1]
                                 if vstup == "":
                                     vstup = ":"
                                 string(y, x + len(vstup), "")
