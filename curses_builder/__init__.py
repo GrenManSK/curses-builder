@@ -212,8 +212,8 @@ class builder:
                         _func = vstup[1:].split(" ")[0].split("\t")[0]
                         number_of_tabs = vstup.count("\t")
                         while number_of_tabs > len(function.keys()) - 1:
-                            number_of_tabs -= 1
-                            vstup = vstup[:-1]
+                            number_of_tabs = 0
+                            vstup = vstup.split("\t")[0]
                         indent = 4
                         if function[_func] == "help":
                             _help = ""
