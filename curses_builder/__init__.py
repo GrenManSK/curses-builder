@@ -187,6 +187,7 @@ class builder:
                 last_command = None
                 self.add_history(window)
                 pocet = 0
+                key = ""
                 _func = None
                 is_func = False
                 arg_num = 0
