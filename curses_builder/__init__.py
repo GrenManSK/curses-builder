@@ -8,6 +8,7 @@ AUTHOR = "GrenManSK"
 
 __all__ = ["builder", "component", "cinput"]
 
+
 def get_id(long: int = 10) -> int:
     id = ""
     for i in range(long):
@@ -198,6 +199,7 @@ class builder:
                 number_of_tabs_hist = 0
                 _in_tab = False
                 _in_tab_num = 0
+                main_arg = None
                 while True:
                     string(y, x, (COLS - x) * " ")
                     if border:
@@ -322,22 +324,68 @@ class builder:
                                 string(y - 1, x, (COLS - x) * " ")
                             if arg_num < arg_num_hist:
                                 try:
-                                    arg_hist.pop(function[_func][3][arg_num_hist])
+                                    if isinstance(
+                                        function[_func][3][arg_num_hist], dict
+                                    ):
+                                        arg_hist.pop(
+                                            function[_func][3][arg_num_hist][main_arg]
+                                        )
+                                    else:
+                                        arg_hist.pop(function[_func][3][arg_num_hist])
                                 except IndexError:
                                     pass
                             arg_num_hist = arg_num
                         try:
-                            arg_hist[function[_func][3][arg_num]] = x + posun
+                            if isinstance(function[_func][3][arg_num], dict):
+                                arg_hist[function[_func][3][arg_num][main_arg]] = (
+                                    x + posun
+                                )
+                            else:
+                                arg_hist[function[_func][3][arg_num]] = x + posun
                             for times, i in arg_hist.items():
                                 string(y - 1, x + i, times)
-                            string(y - 1, x + posun, function[_func][3][arg_num])
+                            if isinstance(function[_func][3][arg_num], dict):
+                                string(
+                                    y - 1,
+                                    x + posun,
+                                    function[_func][3][arg_num][main_arg],
+                                )
+                            else:
+                                string(y - 1, x + posun, function[_func][3][arg_num])
                             more_arg = ""
                             for i in range(arg_num + 1, len(function[_func][3])):
-                                more_arg += " " + function[_func][3][i] + " |"
+                                if isinstance(function[_func][3][i], dict):
+                                    try:
+                                        if (
+                                            vstup.split(" ")[1]
+                                            in function[_func][3][i].keys()
+                                        ):
+                                            more_arg += (
+                                                " "
+                                                + function[_func][3][i][
+                                                    vstup.split(" ")[1]
+                                                ]
+                                                + " |"
+                                            )
+                                            main_arg = vstup.split(" ")[1]
+                                    except IndexError:
+                                        pass
+                                else:
+                                    more_arg += " " + function[_func][3][i] + " |"
+
                             more_arg = more_arg[:-1]
                             more_posun = (
                                 len(vstup) - posun - len(function[_func][3][arg_num])
                             )
+                            if len(more_arg) > COLS - x - more_posun - posun - 3:
+                                more_arg = more_arg[
+                                    0 : COLS
+                                    - x
+                                    - more_posun
+                                    - posun
+                                    - len(function[_func][3][arg_num])
+                                    - 3
+                                ]
                             if more_posun < 0:
                                 more_posun = 0
                             string(
@@ -384,7 +432,7 @@ class builder:
                         if vstup == ikey * 2:
                             inp = False
                             konecna = True
-                        else:
+                        elif vstup == "":
                             inp = True
                             vstup += ikey
                             # curses.nocbreak()
