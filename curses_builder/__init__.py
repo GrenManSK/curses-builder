@@ -223,7 +223,10 @@ class builder:
                         _func = vstup[1:].split(" ")[0].split("\t")[0]
                         if function[_func] == "help":
                             number_of_tabs = vstup.count("\t")
-                            if number_of_tabs_hist == 0 and key == "KEY_BTAB":
+                            if number_of_tabs_hist == 0 and key in [
+                                "KEY_BTAB",
+                                "KEY_B1",
+                            ]:
                                 number_of_tabs = len(function.keys()) - 1
                                 vstup += number_of_tabs * "\t"
                             while number_of_tabs > len(function.keys()) - 1:
@@ -272,6 +275,7 @@ class builder:
                             if i != "":
                                 _increment += count
                                 count = 0
+                        _increment -= 1
                         if increment == 1:
                             _vstup.append("")
                         arg_num = len(_vstup) - 2
@@ -285,10 +289,14 @@ class builder:
                                 sum([len(i) for i in vstup.split(" ")[:-1]])
                                 + 2
                                 + _increment
+                                + arg_num
                             )
                         try:
-                            if key == "\t":
-                                _help = function[_func][4][arg_num]
+                            if key in ["\t", "KEY_BTAB"]:
+                                if isinstance(function[_func][4][arg_num], list):
+                                    _help = function[_func][4][arg_num]
+                                elif isinstance(function[_func][4][arg_num], dict):
+                                    _help = function[_func][4][arg_num][main_arg]
                                 string(y - 1, COLS - 14, "Running Engine")
                                 if isinstance(_help[0], list) and not _in_tab:
                                     _return = search_engine_double(
@@ -298,7 +306,9 @@ class builder:
                                     _return = search_engine(_vstup[arg_num + 1], _help)
                                 string(y - 1, COLS - 14, "              ")
                                 if _return is not None:
-                                    if _in_tab_num > len(_return):
+                                    if key == "KEY_BTAB":
+                                        _in_tab_num -= 2
+                                    if _in_tab_num >= len(_return):
                                         _in_tab_num = 0
                                     vstup = (
                                         vstup.rsplit(" ", 1)[0]
@@ -384,18 +394,29 @@ class builder:
                                     - more_posun
                                     - posun
                                     - len(function[_func][3][arg_num])
+                                    - _increment
                                     - 3
                                 ]
                             if more_posun < 0:
                                 more_posun = 0
-                            string(
-                                y - 1,
-                                x
-                                + posun
-                                + len(function[_func][3][arg_num])
-                                + more_posun,
-                                more_arg,
-                            )
+                            if isinstance(function[_func][3][arg_num], dict):
+                                string(
+                                    y - 1,
+                                    x
+                                    + posun
+                                    + len(function[_func][3][arg_num][main_arg])
+                                    + more_posun,
+                                    more_arg,
+                                )
+                            else:
+                                string(
+                                    y - 1,
+                                    x
+                                    + posun
+                                    + len(function[_func][3][arg_num])
+                                    + more_posun,
+                                    more_arg,
+                                )
                             string(y, x + len(vstup), "")
                         except IndexError:
                             pass
@@ -424,6 +445,26 @@ class builder:
                                         vstup = vstup[:-1]
                                         while vstup[-1] == " ":
                                             vstup = vstup[:-1]
+                            elif key == "KEY_A2":
+                                pass
+                            elif key == "KEY_B3":
+                                if _func == "help":
+                                    vstup += "\t"
+                                    key = "\t"
+                            elif key == "KEY_B1":
+                                if _func == "help":
+                                    if vstup[-1] in ["\t", " "]:
+                                        vstup = vstup[:-1]
+                                        while vstup[-1] == " ":
+                                            vstup = vstup[:-1]
+                                        key = "KEY_BTAB"
+                            elif key == "KEY_C2":
+                                pass
+                            elif key.startswith("KEY_F("):
+                                if key.endswith(")"):
+                                    f_number = key[-2]
+                                    pass
+                                pass
                             else:
                                 vstup += key
                         else:
