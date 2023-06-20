@@ -206,7 +206,10 @@ class builder:
                         string(y - 1, x, (COLS - x) * "_")
                     else:
                         string(y - 1, x, (COLS - x) * " ")
-                    string(y, x, vstup)
+                    if len(vstup) > COLS:
+                        string(y, x, vstup[abs(COLS - len(vstup)) :])
+                    else:
+                        string(y, x, vstup)
                     func_reset = False
                     konecna = False
                     if help and len(vstup) == 1:
