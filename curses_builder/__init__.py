@@ -2,6 +2,7 @@ import curses
 import copy
 from random import randint
 import Levenshtein
+import win32clipboard
 
 VERSION = "1.2.0"
 AUTHOR = "GrenManSK"
@@ -55,9 +56,13 @@ def string(
     if y == "type":
         return
     try:
-        stdscr.addstr(y, x, content)
+        stdscr.addstr(y, x, content, curses.color_pair(1))
     except curses.error:
-        pass
+        try:
+            stdscr.addstr(y, x, content)
+        except curses.error:
+            pass
+
     if register:
         try:
             if window[y] is not None:
@@ -200,6 +205,7 @@ class builder:
                 _in_tab = False
                 _in_tab_num = 0
                 main_arg = None
+                select_all = False
                 while True:
                     string(y, x, (COLS - x) * " ")
                     if border:
@@ -433,14 +439,30 @@ class builder:
                     key = stdscr.getkey()
                     if inp:
                         if not key == "\n":
-                            if key == "\x08":
+                            if key == "\x01":
+                                select_all = True
+                                curses.init_pair(
+                                    1, curses.COLOR_BLACK, curses.COLOR_WHITE
+                                )
+                            elif key == "\x16":
+                                win32clipboard.OpenClipboard()
+                                data = win32clipboard.GetClipboardData().replace("\n", " ")
+                                win32clipboard.CloseClipboard()
+                                vstup = vstup + data
+                            elif key == "\x08":
                                 if _func is not None and function[_func] == "help":
                                     vstup = ikey + _func[:-1]
                                     _func = None
+                                elif select_all:
+                                    vstup = ikey
+                                    curses.init_pair(
+                                        1, curses.COLOR_WHITE, curses.COLOR_BLACK
+                                    )
+                                    select_all = False
                                 else:
                                     vstup = vstup[0:-1]
                                 if vstup == "":
-                                    vstup = ":"
+                                    vstup = ikey
                                 string(y, x + len(vstup), "")
                             elif key == "KEY_BTAB":
                                 if _func == "help":
@@ -466,9 +488,12 @@ class builder:
                             elif key.startswith("KEY_F("):
                                 if key.endswith(")"):
                                     f_number = key[-2]
-                                    pass
-                                pass
                             else:
+                                if select_all:
+                                    curses.init_pair(
+                                        1, curses.COLOR_WHITE, curses.COLOR_BLACK
+                                    )
+                                    select_all = False
                                 vstup += key
                         else:
                             vstup = vstup.strip() + " "
@@ -489,7 +514,7 @@ class builder:
                     if key == "\n":
                         if _func is not None:
                             if function[_func] == "help":
-                                vstup = ":" + __func_to_use + " "
+                                vstup = ikey + __func_to_use + " "
                             else:
                                 konecna = True
                                 inp = False
