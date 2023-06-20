@@ -446,7 +446,9 @@ class builder:
                                 )
                             elif key == "\x16":
                                 win32clipboard.OpenClipboard()
-                                data = win32clipboard.GetClipboardData().replace("\n", " ")
+                                data = win32clipboard.GetClipboardData().replace(
+                                    "\n", " "
+                                )
                                 win32clipboard.CloseClipboard()
                                 vstup = vstup + data
                             elif key == "\x08":
