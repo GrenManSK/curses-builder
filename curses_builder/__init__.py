@@ -1,3 +1,4 @@
+import contextlib
 import curses
 import copy
 from random import randint
@@ -11,10 +12,7 @@ __all__ = ["builder", "component", "cinput"]
 
 
 def get_id(long: int = 10) -> int:
-    id = ""
-    for i in range(long):
-        id += str(randint(0, 9))
-    return id
+    return "".join(str(randint(0, 9)) for _ in range(long))
 
 
 window = {}
@@ -58,18 +56,15 @@ def string(
     try:
         stdscr.addstr(y, x, content, curses.color_pair(1))
     except curses.error:
-        try:
+        with contextlib.suppress(curses.error):
             stdscr.addstr(y, x, content)
-        except curses.error:
-            pass
-
     if register:
         try:
             if window[y] is not None:
                 if len(window[y]) < x:
                     window[y] = window[y] + (x - len(window[y])) * " " + content
                 else:
-                    window[y] = window[y][0:x] + content + window[y][x + len(content) :]
+                    window[y] = window[y][:x] + content + window[y][x + len(content) :]
         except KeyError:
             window[y] = " " * x + content
     current_row += move
@@ -79,7 +74,7 @@ def string(
 
 class builder:
     def __init__(self, *args):
-        self.lenght = len(args)
+        self.length = len(args)
         cin = 0
         comp = 0
         for times, arg in enumerate(args):
@@ -93,11 +88,9 @@ class builder:
     def add_history(self, window_temp):
         global history_number
         global func_reset
-        try:
+        with contextlib.suppress(KeyError):
             if history[history_number] == history[history_number - 1]:
                 return
-        except KeyError:
-            pass
         if not in_func and not func_reset:
             history[history_number] = copy.deepcopy(window_temp)
             history_number += 1
@@ -467,11 +460,10 @@ class builder:
                                     vstup = ikey
                                 string(y, x + len(vstup), "")
                             elif key == "KEY_BTAB":
-                                if _func == "help":
-                                    if vstup[-1] in ["\t", " "]:
+                                if _func == "help" and vstup[-1] in ["\t", " "]:
+                                    vstup = vstup[:-1]
+                                    while vstup[-1] == " ":
                                         vstup = vstup[:-1]
-                                        while vstup[-1] == " ":
-                                            vstup = vstup[:-1]
                             elif key == "KEY_A2":
                                 pass
                             elif key == "KEY_B3":
@@ -479,12 +471,11 @@ class builder:
                                     vstup += "\t"
                                     key = "\t"
                             elif key == "KEY_B1":
-                                if _func == "help":
-                                    if vstup[-1] in ["\t", " "]:
+                                if _func == "help" and vstup[-1] in ["\t", " "]:
+                                    vstup = vstup[:-1]
+                                    while vstup[-1] == " ":
                                         vstup = vstup[:-1]
-                                        while vstup[-1] == " ":
-                                            vstup = vstup[:-1]
-                                        key = "KEY_BTAB"
+                                    key = "KEY_BTAB"
                             elif key == "KEY_C2":
                                 pass
                             elif key.startswith("KEY_F("):
@@ -513,22 +504,21 @@ class builder:
                                 string(y + 1, x, ikey)
                             else:
                                 string(y, x, ikey)
-                    if key == "\n":
-                        if _func is not None:
-                            if function[_func] == "help":
-                                vstup = ikey + __func_to_use + " "
-                            else:
-                                konecna = True
-                                inp = False
-                                curses.cbreak()
-                                stdscr.keypad(True)
-                                curses.noecho()
-                            if border:
-                                string(y + 1, x, int(COLS - 1 - x) * "_")
-                                string(y - 1, x, COLS * "_")
-                            else:
-                                string(y, x, int(COLS - 1 - x) * " ")
-                                string(y - 1, x, COLS * " ")
+                    if key == "\n" and _func is not None:
+                        if function[_func] == "help":
+                            vstup = ikey + __func_to_use + " "
+                        else:
+                            konecna = True
+                            inp = False
+                            curses.cbreak()
+                            stdscr.keypad(True)
+                            curses.noecho()
+                        if border:
+                            string(y + 1, x, int(COLS - 1 - x) * "_")
+                            string(y - 1, x, COLS * "_")
+                        else:
+                            string(y, x, int(COLS - 1 - x) * " ")
+                            string(y - 1, x, COLS * " ")
                     if konecna:
                         limit -= 1
                         if not ikey == "":
@@ -636,7 +626,7 @@ class builder:
 
     def add(self, *args):
         for times, arg in enumerate(args):
-            times += self.lenght
+            times += self.length
             setattr(self, f"component_{times}", arg())
 
 
@@ -679,7 +669,7 @@ class component(builder):
             window[self.y] = [self.x, (self.width + 2) * "_"]
             window[self.y + self.height + 1] = [self.x, "|" + (self.width) * "_" + "|"]
         number = 0
-        times = 0 if not self.border else 1
+        times = 1 if self.border else 0
         for times in range(self.y + times, self.height + self.y + times):
             if not self.border:
                 window[self.y + number] = [
